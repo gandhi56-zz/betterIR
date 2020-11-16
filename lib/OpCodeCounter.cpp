@@ -1,3 +1,10 @@
+
+/**
+ *
+ * Usage: opt -load-pass-plugin libOpcodeCounter.so --passes='default<O1>' `\` -disable-output <input-llvm-file>
+ */
+
+
 #include "OpCodeCounter.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"
@@ -10,10 +17,12 @@
 
 llvm::PreservedAnalyses OpCodeCounter::run(llvm::Function &fn,
                                            llvm::FunctionAnalysisManager &) {
+  llvm::errs() << "running opcode counter\n";
   OpCodeCounter::Result opcodeMap = generateOpcodeMap(fn);
   printResult(opcodeMap, fn.getName());
   return llvm::PreservedAnalyses::all();
 }
+
 OpCodeCounter::Result OpCodeCounter::generateOpcodeMap(llvm::Function &f) {
   OpCodeCounter::Result opcodeMap;
   for (auto& bb : f){
