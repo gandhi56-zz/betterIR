@@ -20,9 +20,14 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/Local.h"
+#include "llvm/ADT/Statistic.h"
+
+#define DEBUG_TYPE "dead-code"
 
 #define PASS_NAME "dce"
 
+STATISTIC(numInstrDeleted, "Number of Instructions Eliminated");
+STATISTIC(numBasicBlocksDeleted, "Number of Basic Blocks Eliminated");
 
 PreservedAnalyses
 DeadCodeElimination::run(Function& fn, FunctionAnalysisManager&){
@@ -30,12 +35,13 @@ DeadCodeElimination::run(Function& fn, FunctionAnalysisManager&){
   for (auto& bb : fn){
     changed |= runOnBasicBlock(bb);
   }
+  changed |= constantFolding(fn);
   return changed? PreservedAnalyses::all() : PreservedAnalyses::none();
 }
 
 bool DeadCodeElimination::runOnBasicBlock(BasicBlock& bb){
   bool changed = false;
-  changed = removeTriviallyDeadInstr(bb);
+  changed |= removeTriviallyDeadInstr(bb);
   return changed;
 }
 
@@ -53,6 +59,12 @@ bool DeadCodeElimination::removeTriviallyDeadInstr(BasicBlock& bb){
     deadInstrStack.pop();
   }
   return changed;
+}
+
+bool DeadCodeElimination::constantFolding(Function &fn){
+  for (auto& bb : fn){
+    ConstantFoldTerminator(&bb);
+  }
 }
 
 // --------------------------------------------------------------------------------

@@ -10,11 +10,17 @@
 
 using namespace llvm;
 
-struct DeadCodeElimination: public PassInfoMixin<DeadCodeElimination>{
-  PreservedAnalyses run(Function& fn, FunctionAnalysisManager&);
-  bool runOnBasicBlock(BasicBlock& bb);
-  bool removeTriviallyDeadInstr(BasicBlock& bb);
+namespace {
+struct DeadCodeElimination : public PassInfoMixin<DeadCodeElimination> {
+  PreservedAnalyses run(Function &fn, FunctionAnalysisManager &);
+  bool runOnBasicBlock(BasicBlock &bb);
+  bool removeTriviallyDeadInstr(BasicBlock &bb);
+  bool constantFolding(Function &fn);
+
+  int numInstrDeleted = 0;
+  int numBasicBlocksDeleted = 0;
 };
+}
 
 
 #endif //BETTERIR_LIB_DEADCODEELIMINATION_H
