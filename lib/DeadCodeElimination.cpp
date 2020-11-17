@@ -6,12 +6,9 @@
  *
  * Usage:
  *
- * Legacy PM
- *  opt -load cmake-build-debug/lib/libDeadCodeElimination.so `\` --dead-code <bitcode-file>
- *
  * New PM
  *    opt -load-pass-plugin cmake-build-debug/lib/libDeadCodeElimination.so
- *        -passes=-"dce" <bitcode-file>
+ *    -passes="dead-code" tests/DeadCodeElimination/input/foo00.ll -disable-output
  */
 
 
@@ -19,27 +16,55 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
-#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include <stack>
+#include "llvm/IR/Instructions.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/Utils/Local.h"
+
 #define PASS_NAME "dce"
 
 
-llvm::PreservedAnalyses
-DeadCodeElimination::run(llvm::Function& fn, llvm::FunctionAnalysisManager&){
-  //=== pass implementation goes here ===//
-  llvm::errs() << fn.getName() << "\n";
-  return llvm::PreservedAnalyses::all();
+PreservedAnalyses
+DeadCodeElimination::run(Function& fn, FunctionAnalysisManager&){
+  bool changed = false;
+  for (auto& bb : fn){
+    changed |= runOnBasicBlock(bb);
+  }
+  return changed? PreservedAnalyses::all() : PreservedAnalyses::none();
+}
+
+bool DeadCodeElimination::runOnBasicBlock(BasicBlock& bb){
+  bool changed = false;
+  changed = removeTriviallyDeadInstr(bb);
+  return changed;
+}
+
+bool DeadCodeElimination::removeTriviallyDeadInstr(BasicBlock& bb){
+  bool changed = false;
+  std::stack<Instruction*> deadInstrStack;
+  for (auto& inst : bb) {
+    if (isInstructionTriviallyDead(&inst)){
+      deadInstrStack.push(&inst);
+      changed = true;
+    }
+  }
+  while (!deadInstrStack.empty()){
+    deadInstrStack.top()->eraseFromParent();
+    deadInstrStack.pop();
+  }
+  return changed;
 }
 
 // --------------------------------------------------------------------------------
 // Pass Manager registration
 // --------------------------------------------------------------------------------
 
-llvm::PassPluginLibraryInfo getDCEPluginInfo() {
+PassPluginLibraryInfo getDCEPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, PASS_NAME, LLVM_VERSION_STRING,
-          [](llvm::PassBuilder &PB) {
+          [](PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
-                [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
-                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                [](StringRef Name, FunctionPassManager &FPM,
+                   ArrayRef<PassBuilder::PipelineElement>) {
                   if (Name == "dead-code") {
                     FPM.addPass(DeadCodeElimination());
                     return true;
@@ -49,7 +74,7 @@ llvm::PassPluginLibraryInfo getDCEPluginInfo() {
           }};
 }
 
-extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+extern "C" LLVM_ATTRIBUTE_WEAK ::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
   return getDCEPluginInfo();
 }

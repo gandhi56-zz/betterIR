@@ -8,9 +8,12 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
 
-struct DeadCodeElimination: public llvm::PassInfoMixin<DeadCodeElimination>{
-  llvm::PreservedAnalyses
-  run(llvm::Function& fn, llvm::FunctionAnalysisManager&);
+using namespace llvm;
+
+struct DeadCodeElimination: public PassInfoMixin<DeadCodeElimination>{
+  PreservedAnalyses run(Function& fn, FunctionAnalysisManager&);
+  bool runOnBasicBlock(BasicBlock& bb);
+  bool removeTriviallyDeadInstr(BasicBlock& bb);
 };
 
 
