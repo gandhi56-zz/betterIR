@@ -16,6 +16,7 @@ struct DeadCodeElimination : public PassInfoMixin<DeadCodeElimination> {
   bool runOnBasicBlock(BasicBlock &bb);
   bool removeTriviallyDeadInstr(BasicBlock &bb);
   bool constantFolding(Function &fn);
+  static bool removeUnusedInstr(BasicBlock& bb);
 
   int numInstrDeleted = 0;
   int numBasicBlocksDeleted = 0;

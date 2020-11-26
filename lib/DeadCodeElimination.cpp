@@ -42,7 +42,32 @@ DeadCodeElimination::run(Function& fn, FunctionAnalysisManager&){
 bool DeadCodeElimination::runOnBasicBlock(BasicBlock& bb){
   bool changed = false;
   changed |= removeTriviallyDeadInstr(bb);
+  changed |= removeUnusedInstr(bb);
   return changed;
+}
+
+/// FIXME
+bool DeadCodeElimination::removeUnusedInstr(BasicBlock& bb){
+  bool changed;
+  std::stack<Instruction*> deadInstrStack;
+  do{
+    changed = false;
+    for (auto& inst : bb){
+      if (inst.getNumUses() == 0){
+        deadInstrStack.push(&inst);
+      }
+    }
+
+    if (!deadInstrStack.empty()){
+      changed = true;
+      while (!deadInstrStack.empty()){
+        deadInstrStack.top()->eraseFromParent();
+        deadInstrStack.pop();
+      }
+    }
+
+  }while (changed);
+  return true;
 }
 
 bool DeadCodeElimination::removeTriviallyDeadInstr(BasicBlock& bb){
@@ -65,6 +90,7 @@ bool DeadCodeElimination::constantFolding(Function &fn){
   for (auto& bb : fn){
     ConstantFoldTerminator(&bb);
   }
+  return true;
 }
 
 // --------------------------------------------------------------------------------

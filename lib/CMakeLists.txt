@@ -1,4 +1,5 @@
 include_directories(../include)
+#add_library(vanilla SHARED vanilla.cpp)
 add_library(opcodeCC SHARED OpCodeCounter.cpp)
 add_library(DeadCodeElimination SHARED DeadCodeElimination.cpp)
-#add_library(vanilla SHARED vanilla.cpp)
+add_library(liveness SHARED LivenessAnalysis.cpp)
