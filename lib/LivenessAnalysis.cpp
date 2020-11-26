@@ -23,11 +23,50 @@ LivenessAnalysis::run(llvm::Function& fn, llvm::FunctionAnalysisManager&){
   // compute liveIn and liveOut sets for each basic block
   bool changed;
   do{
+    // track whether this iteration changed the liveIn set or not
     changed = false;
 
+    // iterate over each basic block
+    for (auto& bb : fn){
+
+      // compute the liveOut set
+      livenessAtInstrExit(&bb);
+
+      // compute the liveIn set
+      livenessAtInstrEntry(&bb, changed);
+
+    }
   } while (changed);
 
+  for (auto& bb : fn){
+    LLVM_DEBUG(dbgs() << "Live in set for basic block" << bb.getName() << '\n');
+    debugPrintVarSet(liveIn[&bb]);
+    LLVM_DEBUG(dbgs() << '\n');
+
+    LLVM_DEBUG(dbgs() << "\nLive out set for basic block" << bb.getName() << '\n');
+    debugPrintVarSet(liveOut[&bb]);
+    LLVM_DEBUG(dbgs() << '\n');
+  }
+
   return llvm::PreservedAnalyses::all();
+}
+
+void LivenessAnalysis::livenessAtInstrExit(BasicBlock* bb){
+  for (BasicBlock* nextBB : successors(bb)){
+    for (auto& liveVar : liveIn[nextBB]){
+      liveOut[bb].insert(liveVar);
+    }
+  }
+}
+
+void LivenessAnalysis::livenessAtInstrEntry(BasicBlock* bb, bool& changed){
+  liveIn[bb] = gen[bb];
+  for (auto& liveVar : liveOut[bb]){
+    if (kill[bb].find(liveVar) == std::end(kill[bb])){
+      liveIn[bb].insert(liveVar);
+      changed = true;
+    }
+  }
 }
 
 void LivenessAnalysis::computeGenKillVariables(BasicBlock *bb){
@@ -65,17 +104,19 @@ void LivenessAnalysis::computeGenKillVariables(BasicBlock *bb){
   }
 
   LLVM_DEBUG(dbgs() << "Kill set for basic block" << bb->getName() << '\n');
-  for (auto& var : kill[bb]){
-    LLVM_DEBUG(dbgs() << var << " ");
-  }
+  debugPrintVarSet(kill[bb]);
   LLVM_DEBUG(dbgs() << "\n\n");
 
-  LLVM_DEBUG(dbgs() << "Gen set for basic block" << bb->getName() << '\n');
-  for (auto& var : gen[bb]){
-    LLVM_DEBUG(dbgs() << var << " ");
-  }
+  LLVM_DEBUG(dbgs() << "\nGen set for basic block" << bb->getName() << '\n');
+  debugPrintVarSet(gen[bb]);
   LLVM_DEBUG(dbgs() << '\n');
 
+}
+
+void LivenessAnalysis::debugPrintVarSet(LivenessAnalysis::VarSet& s){
+  for (auto& var : s){
+    LLVM_DEBUG(dbgs() << var << " ");
+  }
 }
 
 // --------------------------------------------------------------------------------
