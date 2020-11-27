@@ -24,27 +24,19 @@ LivenessAnalysis::run(llvm::Function& fn, llvm::FunctionAnalysisManager&){
     const BasicBlock* bb = workVec.back(); workVec.pop_back();
     getTermSuccInstr(bb);
     computeUsesDefs(bb);
-
-    auto instr = bb->begin();
-    const Instruction* cInstr = &(*instr);
-    bool eq = true;
-    if (liveIn[cInstr].size() == liveOut[bb->getTerminator()].size()){
-      for (auto* inInstr : liveIn[cInstr]){
-        if (liveOut[bb->getTerminator()].count(inInstr) == 0){
-          eq = false;
-          break;
-        }
-      }
-    }
-
-    if (!eq)
-      for (const BasicBlock* pred : predecessors(bb))
-        workVec.push_back(pred);
+    for (const BasicBlock* pred : predecessors(bb))
+      workVec.push_back(pred);
   }
 
   // output code and live variables
-  for (Function::iterator b = fn.begin(); b != fn.end(); ++b){
-    const BasicBlock* bb = &*b;
+  printLiveVariables(fn);
+
+  return llvm::PreservedAnalyses::all();
+}
+
+void LivenessAnalysis::printLiveVariables(Function& fn){
+  for (auto & b : fn){
+    const BasicBlock* bb = &b;
     for (auto i = bb->begin(); i != bb->end(); ++i){
       const Instruction* instr = &*i;
       if (i == bb->begin()){
@@ -61,8 +53,6 @@ LivenessAnalysis::run(llvm::Function& fn, llvm::FunctionAnalysisManager&){
       if (instr->isTerminator())  errs() << '\n';
     }
   }
-
-  return llvm::PreservedAnalyses::all();
 }
 
 void LivenessAnalysis::getTermSuccInstr(const BasicBlock* bb){
@@ -95,7 +85,9 @@ void LivenessAnalysis::computeUsesDefs(const BasicBlock* bb){
     // otherwise store the operands of the instruction into the set
     //  if they are valid definitions of an instruction
     if (isa<StoreInst>(*instr)){
-      if (!isa<ConstantInt>(instr->getOperand(0)))  uses.insert(instr->getOperand(0));
+      auto* storeInstr = dyn_cast<StoreInst>(instr);
+      errs() << "STORE USE " << *storeInstr->getOperand(0) << '\n';
+      if (!isa<ConstantInt>(storeInstr->getOperand(0)))  uses.insert(storeInstr->getOperand(0));
     }
     else{
       /// FIXME: global variables, other instructions
@@ -103,22 +95,29 @@ void LivenessAnalysis::computeUsesDefs(const BasicBlock* bb){
         if (isa<Instruction>(&op))  uses.insert(op);
     }
 
+    // if a variable is live at the exit point of the instruction,
+    //  then it is potentially live at the entry point of the instruction
     liveIn[instr] = liveOut[instr];
 
-    if (!defs.empty()){
-//      LLVM_DEBUG(dbgs() << "Defs set: ");
-      for (auto var : defs){
-//        LLVM_DEBUG(dbgs() << *var << " ");
-        liveIn[instr].erase(var);
-      }
-//      LLVM_DEBUG(dbgs() << "\n");
-    }
-
-    if (!uses.empty() and (lhsValue->getName().empty() or liveOut[instr].find(lhsValue) != liveOut[instr].end())){
+    //
+//    if (!uses.empty() and (lhsValue->getName().empty() or liveOut[instr].find(lhsValue) != liveOut[instr].end())){
+    if (!uses.empty()){
 //      LLVM_DEBUG(dbgs() << "Uses set: ");
       for (auto var : uses){
 //        LLVM_DEBUG(dbgs() << *var << " ");
         liveIn[instr].insert(var);
+      }
+//      LLVM_DEBUG(dbgs() << "\n");
+    }
+
+    // if this instruction kills variables that are live at the exit
+    //  point of the instruction, then remove it from the liveIn set
+    if (!defs.empty()){
+//      LLVM_DEBUG(dbgs() << "Defs set (erase): ");
+      for (auto var : defs){
+//        LLVM_DEBUG(dbgs() << *var << " ");
+        errs() << "deleting " << *var << " from liveIn of " << *instr << '\n';
+        liveIn[instr].erase(var);
       }
 //      LLVM_DEBUG(dbgs() << "\n");
     }

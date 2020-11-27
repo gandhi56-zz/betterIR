@@ -18,6 +18,7 @@ struct LivenessAnalysis : public PassInfoMixin<LivenessAnalysis> {
 
   void getTermSuccInstr(const BasicBlock* bb);
   void computeUsesDefs(const BasicBlock* bb);
+  void printLiveVariables(Function& fn);
 
 };
 }
