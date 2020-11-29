@@ -21,7 +21,7 @@ struct LivenessAnalysis : public PassInfoMixin<LivenessAnalysis> {
   void livenessAtInstrExit(BasicBlock* bb);
   void livenessAtInstrEntry(BasicBlock* bb, bool& changed);
 
-  void debugPrintVarSet(LivenessAnalysis::VarSet& s);
+  static void debugPrintVarSet(LivenessAnalysis::VarSet& s);
 
 };
 }
