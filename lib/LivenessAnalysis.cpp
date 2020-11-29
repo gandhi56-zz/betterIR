@@ -2,6 +2,8 @@
 // Created by anshil on 2020-11-26.
 //
 
+#define LIN errs() << __LINE__ << '\n';
+
 #include "LivenessAnalysis.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"
@@ -68,16 +70,26 @@ void LivenessAnalysis::computeUsesDefs(const BasicBlock* bb){
     const Instruction* instr = &(*i);
     DenseSet<const Value*> uses, defs;
 
+    errs() << *instr << '\n';
+
     // liveOut[terminator instruction] is the liveIn of the following instruction
-    if (i != bb->rbegin()){
-      auto tmp  = i;
-      liveOut[instr] = liveIn[&*(--tmp)];
-    }
+    /// Is this working properly?
+//    if (i != bb->rbegin()){
+//      auto tmp  = i;
+//      liveOut[instr] = liveIn[&*(--tmp)];
+//    }
 
     // if store instruction, the second operand is defined,
     //  store the operand in the defs set
     // otherwise store the instruction into the set
-    const Value* lhsValue = (isa<StoreInst>(*instr) ? instr->getOperand(1) : dyn_cast<Value>(instr));
+    const Value* lhsValue;
+    if (isa<StoreInst>(*instr)){
+      lhsValue = instr->getOperand(1);
+      errs() << "STORE DEF " << *lhsValue << '\n';
+    }
+    else{
+      lhsValue = dyn_cast<Value>(instr);
+    }
     defs.insert(lhsValue);
 
     // if store instruction, the first operand is used,
@@ -86,46 +98,44 @@ void LivenessAnalysis::computeUsesDefs(const BasicBlock* bb){
     //  if they are valid definitions of an instruction
     if (isa<StoreInst>(*instr)){
       auto* storeInstr = dyn_cast<StoreInst>(instr);
-      errs() << "STORE USE " << *storeInstr->getOperand(0) << '\n';
-      if (!isa<ConstantInt>(storeInstr->getOperand(0)))  uses.insert(storeInstr->getOperand(0));
+      if (!isa<Constant>(storeInstr->getOperand(0))){
+        uses.insert(storeInstr->getOperand(0));
+        errs() << "STORE USE " << *storeInstr->getOperand(0) << '\n';
+      }
     }
     else{
       /// FIXME: global variables, other instructions
-      for (auto& op : instr->operands())
-        if (isa<Instruction>(&op))  uses.insert(op);
+      for (auto& op : instr->operands()) {
+        errs() << "operands = " << *op << ' ';
+        if (!isa<ConstantInt>(op)) {
+          uses.insert(op);
+          errs() << "STORE USE " << *op << '\n';
+        }
+        errs() << '\n';
+      }
     }
 
     // if a variable is live at the exit point of the instruction,
     //  then it is potentially live at the entry point of the instruction
     liveIn[instr] = liveOut[instr];
 
-    //
-//    if (!uses.empty() and (lhsValue->getName().empty() or liveOut[instr].find(lhsValue) != liveOut[instr].end())){
-    if (!uses.empty()){
-//      LLVM_DEBUG(dbgs() << "Uses set: ");
-      for (auto var : uses){
-//        LLVM_DEBUG(dbgs() << *var << " ");
-        liveIn[instr].insert(var);
-      }
-//      LLVM_DEBUG(dbgs() << "\n");
+    for (auto var : uses){
+      errs() << "inserting " << *var << '\n';
+      liveIn[instr].insert(var);
     }
 
     // if this instruction kills variables that are live at the exit
     //  point of the instruction, then remove it from the liveIn set
-    if (!defs.empty()){
-//      LLVM_DEBUG(dbgs() << "Defs set (erase): ");
-      for (auto var : defs){
-//        LLVM_DEBUG(dbgs() << *var << " ");
-        errs() << "deleting " << *var << " from liveIn of " << *instr << '\n';
-        liveIn[instr].erase(var);
-      }
-//      LLVM_DEBUG(dbgs() << "\n");
+    for (auto var : defs){
+      errs() << "erasing " << *var << '\n';
+      liveIn[instr].erase(var);
     }
 
     // clear sets
     defs.clear();
     uses.clear();
   }
+  errs() << "============================\n";
 }
 
 
