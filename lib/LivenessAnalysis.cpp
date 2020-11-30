@@ -12,122 +12,126 @@
 #define PASS_NAME "liveness"
 #define DEBUG_TYPE "liveness"
 
-llvm::PreservedAnalyses
+//#define debug_kill_sets
+//#define debug_gen_sets
+
+PreservedAnalyses
 LivenessAnalysis::run(llvm::Function& fn, llvm::FunctionAnalysisManager&){
+  computeGenKillVariables(&fn);
 
-  // determine the dfs order of basic blocks in this function
-  std::vector<const BasicBlock*> workVec;
-  for (const BasicBlock* bb : depth_first(&fn.getEntryBlock()))
-    workVec.push_back(bb);
+  // compute liveIn and liveOut sets for each basic block
+  bool changed = true;
+  int iter = 0;
+  while (changed) {
+    errs() << "iteration " << iter++ << "...\n";
 
-  while (!workVec.empty()){
-    const BasicBlock* bb = workVec.back(); workVec.pop_back();
-    getTermSuccInstr(bb);
-    computeUsesDefs(bb);
-    for (const BasicBlock* pred : predecessors(bb))
-      workVec.push_back(pred);
+    // track whether this iteration changed the liveIn set or not
+    changed = false;
+
+    // iterate over each basic block
+    for (BasicBlock& bb : fn){
+
+      // compute liveOut set for the current basic block
+      for (BasicBlock* nextBB : successors(&bb)){
+        for (auto& liveVar : liveIn[nextBB]){
+          liveOut[&bb].insert(liveVar);
+        }
+      }
+
+      // compute liveIn set for the current basic block
+      VarSet tmpSet = liveIn[&bb];
+      liveIn[&bb].clear();
+      liveIn[&bb] = gen[&bb];
+      for (auto& var : liveOut[&bb]){
+        if (kill[&bb].find(var) == std::end(kill[&bb])){
+          liveIn[&bb].insert(var);
+        }
+      }
+
+      // check if the liveIn set has reached a fixed point
+      if (liveIn[&bb] != tmpSet){
+        changed = true;
+      }
+    }
   }
 
-  // output code and live variables
-  printLiveVariables(fn);
+  for (auto& bb : fn){
+    errs() << "Live in set for basic block " << bb.getName() << '\n';
+    debugPrintVarSet(liveIn[&bb]);
+    errs() << '\n';
 
+    errs() << "\nLive out set for basic block " << bb.getName() << '\n';
+    debugPrintVarSet(liveOut[&bb]);
+    errs() << "\n---------------------------------\n";
+  }
   return llvm::PreservedAnalyses::all();
 }
 
-void LivenessAnalysis::printLiveVariables(Function& fn){
-  for (auto & b : fn){
-    const BasicBlock* bb = &b;
-    for (auto i = bb->begin(); i != bb->end(); ++i){
-      const Instruction* instr = &*i;
-      if (i == bb->begin()){
-        errs() << "Live : ";
-        for (auto var : liveIn[instr])
-          errs() << *var << ' ';
-        errs() << '\n';
+void LivenessAnalysis::computeGenKillVariables(Function *fn){
+  for (auto& bb : *fn){
+    for (auto& inst : bb){
+      const Instruction* cInst = &inst;
+
+      // insert all uses of the current instruction into the gen set
+      if (isa<StoreInst>(cInst)){
+        auto* storeInst = dyn_cast<StoreInst>(cInst);
+        const Value* var = storeInst->getOperand(0);
+        if (!isa<Constant>(var)){
+          gen[&bb].insert(var);
+        }
       }
-      errs() << '\n' << *instr << "\n\n";
-      errs() << "Live : ";
-      for (auto var : liveOut[instr])
-        errs() << *var << ' ';
-      errs() << '\n';
-      if (instr->isTerminator())  errs() << '\n';
-    }
-  }
-}
+      else{
+        for (const Use& use : cInst->operands()){
+          const Value* var =  use.get();
+          if (isa<Instruction>(var))
+            gen[&bb].insert(var);
+        }
+      }
 
-void LivenessAnalysis::getTermSuccInstr(const BasicBlock* bb){
-  // set liveOut for the terminator instruction of this basic block
-  for (const BasicBlock* succ : successors(bb))
-    for (const Value* v : liveIn[&(*(succ->begin()))])
-      liveOut[bb->getTerminator()].insert(v);
-}
-
-void LivenessAnalysis::computeUsesDefs(const BasicBlock* bb){
-  // iterate over each instruction to compute uses and defs
-  for (auto i = bb->rbegin(); i != bb->rend(); ++i){
-    const Instruction* instr = &(*i);
-    DenseSet<const Value*> uses, defs;
-
-    // liveOut[terminator instruction] is the liveIn of the following instruction
-    if (i != bb->rbegin()){
-      auto tmp  = i;
-      liveOut[instr] = liveIn[&*(--tmp)];
-    }
-
-    // if store instruction, the second operand is defined,
-    //  store the operand in the defs set
-    // otherwise store the instruction into the set
-    const Value* lhsValue = (isa<StoreInst>(*instr) ? instr->getOperand(1) : dyn_cast<Value>(instr));
-    defs.insert(lhsValue);
-
-    // if store instruction, the first operand is used,
-    //  store the operand in the uses set
-    // otherwise store the operands of the instruction into the set
-    //  if they are valid definitions of an instruction
-    if (isa<StoreInst>(*instr)){
-      auto* storeInstr = dyn_cast<StoreInst>(instr);
-      errs() << "STORE USE " << *storeInstr->getOperand(0) << '\n';
-      if (!isa<ConstantInt>(storeInstr->getOperand(0)))  uses.insert(storeInstr->getOperand(0));
-    }
-    else{
-      /// FIXME: global variables, other instructions
-      for (auto& op : instr->operands())
-        if (isa<Instruction>(&op))  uses.insert(op);
-    }
-
-    // if a variable is live at the exit point of the instruction,
-    //  then it is potentially live at the entry point of the instruction
-    liveIn[instr] = liveOut[instr];
-
-    //
-//    if (!uses.empty() and (lhsValue->getName().empty() or liveOut[instr].find(lhsValue) != liveOut[instr].end())){
-    if (!uses.empty()){
-//      LLVM_DEBUG(dbgs() << "Uses set: ");
-      for (auto var : uses){
-//        LLVM_DEBUG(dbgs() << *var << " ");
-        liveIn[instr].insert(var);
+      // store killed variable from cInst
+      if (isa<StoreInst>(*cInst)){
+        // if store instruction, the second operand is killed
+        auto* storeInst = dyn_cast<StoreInst>(cInst);
+        kill[&bb].insert(storeInst->getOperand(1));
+      }
+      else{
+        if (killedInstr(cInst))
+          kill[&bb].insert(dyn_cast<Value>(cInst));
       }
 //      LLVM_DEBUG(dbgs() << "\n");
     }
 
-    // if this instruction kills variables that are live at the exit
-    //  point of the instruction, then remove it from the liveIn set
-    if (!defs.empty()){
-//      LLVM_DEBUG(dbgs() << "Defs set (erase): ");
-      for (auto var : defs){
-//        LLVM_DEBUG(dbgs() << *var << " ");
-        errs() << "deleting " << *var << " from liveIn of " << *instr << '\n';
-        liveIn[instr].erase(var);
-      }
-//      LLVM_DEBUG(dbgs() << "\n");
-    }
+#ifdef debug_kill_sets
+    LLVM_DEBUG(dbgs() << "Kill set for basic block " << bb.getName() << '\n');
+    debugPrintVarSet(kill[&bb]);
+    LLVM_DEBUG(dbgs() << "\n");
+#endif
 
-    // clear sets
-    defs.clear();
-    uses.clear();
+#ifdef debug_gen_sets
+    LLVM_DEBUG(dbgs() << "Gen set for basic block " << bb.getName() << '\n');
+    debugPrintVarSet(gen[&bb]);
+    LLVM_DEBUG(dbgs() << "--------------------------------------\n");
+#endif
   }
+  errs() << "// ======================================== //\n";
 }
 
+bool LivenessAnalysis::killedInstr(const Instruction* cInst){
+  if (cInst->isUnaryOp() or cInst->isBinaryOp())
+    return true;
+  if (isa<LoadInst>(cInst) or isa<AllocaInst>(cInst) or isa<GetElementPtrInst>(cInst))
+    return true;
+  if (isa<ICmpInst>(cInst))
+    return true;
+  /// FIXME: add conversion operations here
+  return false;
+}
+
+void LivenessAnalysis::debugPrintVarSet(LivenessAnalysis::VarSet& s){
+  for (auto& var : s){
+    errs() << *var << "\n";
+  }
+}
 
 // --------------------------------------------------------------------------------
 // Pass Manager registration

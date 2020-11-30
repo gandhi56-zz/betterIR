@@ -15,10 +15,9 @@ struct LivenessAnalysis : public PassInfoMixin<LivenessAnalysis> {
   DenseMap<const Instruction*, DenseSet<const Value*>> liveIn, liveOut;
 
   PreservedAnalyses run(Function &fn, FunctionAnalysisManager &);
-
-  void getTermSuccInstr(const BasicBlock* bb);
-  void computeUsesDefs(const BasicBlock* bb);
-  void printLiveVariables(Function& fn);
+  void computeGenKillVariables(Function *fn);
+  bool killedInstr(const Instruction* cInst);
+  static void debugPrintVarSet(LivenessAnalysis::VarSet& s);
 
 };
 }
