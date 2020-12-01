@@ -56,7 +56,7 @@ LivenessAnalysis::run(llvm::Function& fn, llvm::FunctionAnalysisManager&){
   }
 
   for (auto& bb : fn){
-    errs() << "Live in set for basic block " << bb.getName() << '\n';
+    errs() << "Live in set for basic block " << bb.getName() << "with #instructions = " << bb.getInstList().size() << '\n';
     debugPrintVarSet(liveIn[&bb]);
     errs() << '\n';
 
@@ -95,7 +95,7 @@ void LivenessAnalysis::computeGenKillVariables(Function *fn){
         kill[&bb].insert(storeInst->getOperand(1));
       }
       else{
-        if (killedInstr(cInst))
+        if (cInst->getType() != llvm::Type::getVoidTy(fn->getContext()))
           kill[&bb].insert(dyn_cast<Value>(cInst));
       }
 //      LLVM_DEBUG(dbgs() << "\n");
@@ -114,17 +114,6 @@ void LivenessAnalysis::computeGenKillVariables(Function *fn){
 #endif
   }
   errs() << "// ======================================== //\n";
-}
-
-bool LivenessAnalysis::killedInstr(const Instruction* cInst){
-  if (cInst->isUnaryOp() or cInst->isBinaryOp())
-    return true;
-  if (isa<LoadInst>(cInst) or isa<AllocaInst>(cInst) or isa<GetElementPtrInst>(cInst))
-    return true;
-  if (isa<ICmpInst>(cInst))
-    return true;
-  /// FIXME: add conversion operations here
-  return false;
 }
 
 void LivenessAnalysis::debugPrintVarSet(LivenessAnalysis::VarSet& s){
