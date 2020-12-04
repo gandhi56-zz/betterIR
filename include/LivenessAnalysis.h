@@ -13,7 +13,7 @@ using namespace llvm;
 namespace {
 struct LivenessAnalysis : public PassInfoMixin<LivenessAnalysis> {
   using VarSet = DenseSet<const Value*>;
-  DenseMap<BasicBlock*, VarSet>  gen, kill;
+  DenseMap<BasicBlock*, VarSet>  use, def;
   DenseMap<BasicBlock*, VarSet> liveIn, liveOut;
 
   PreservedAnalyses run(Function &fn, FunctionAnalysisManager &);
