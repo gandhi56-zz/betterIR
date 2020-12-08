@@ -1,30 +1,12 @@
-; ModuleID = 'foo00.c'
-source_filename = "foo00.c"
+; ModuleID = '../tests/DeadCodeElimination/input/simple.ll'
+source_filename = "simple.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define dso_local i32 @foo() #0 {
-  %1 = alloca i32, align 4
-  %2 = alloca i32, align 4
-  %3 = alloca i32, align 4
-  %4 = alloca i32, align 4
-  store i32 0, i32* %1, align 4
-  store i32 2, i32* %2, align 4
-  %5 = load i32, i32* %1, align 4
-  %6 = add nsw i32 %5, 4
-  store i32 %6, i32* %3, align 4
-  %7 = load i32, i32* %1, align 4
-  %8 = load i32, i32* %2, align 4
-  %9 = add nsw i32 %7, %8
-  ret i32 %6
-}
-
-; Function Attrs: noinline nounwind optnone uwtable
 define dso_local i32 @main() #0 {
   %1 = alloca i32, align 4
-  store i32 0, i32* %1, align 4
-  %2 = call i32 @foo()
+  %2 = load i32, i32* %1, align 4
   ret i32 %2
 }
 

@@ -11,7 +11,7 @@
  *    -passes="dead-code" tests/DeadCodeElimination/input/foo00.ll -disable-output
  */
 
-
+#include "LivenessAnalysis.h"
 #include "DeadCodeElimination.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Passes/PassBuilder.h"
@@ -31,66 +31,29 @@ STATISTIC(numBasicBlocksDeleted, "Number of Basic Blocks Eliminated");
 
 PreservedAnalyses
 DeadCodeElimination::run(Function& fn, FunctionAnalysisManager&){
-  bool changed = false;
-  for (auto& bb : fn){
-    changed |= runOnBasicBlock(bb);
-  }
-  changed |= constantFolding(fn);
-  return changed? PreservedAnalyses::all() : PreservedAnalyses::none();
-}
-
-bool DeadCodeElimination::runOnBasicBlock(BasicBlock& bb){
-  bool changed = false;
-  changed |= removeTriviallyDeadInstr(bb);
-  changed |= removeUnusedInstr(bb);
-  return changed;
-}
-
-/// FIXME
-bool DeadCodeElimination::removeUnusedInstr(BasicBlock& bb){
   bool changed;
-  std::stack<Instruction*> deadInstrStack;
-  do{
+  while (1){
     changed = false;
-    for (auto& inst : bb){
-      if (inst.getNumUses() == 0){
-        deadInstrStack.push(&inst);
+    std::vector<Value*> deadInstrList;
+    for (auto& bb : fn){
+      for (auto& inst : bb){
+        if (isa<ReturnInst>(inst))  continue;
+        if (inst.getNumUses() == 0){
+          errs() << "removing " << inst << '\n';
+          deadInstrList.push_back(&inst);
+          changed = true;
+        }
       }
     }
 
-    if (!deadInstrStack.empty()){
-      changed = true;
-      while (!deadInstrStack.empty()){
-        deadInstrStack.top()->eraseFromParent();
-        deadInstrStack.pop();
-      }
+    for (auto* val : deadInstrList){
+      auto* deadInstr = dyn_cast<Instruction>(val);
+      deadInstr->eraseFromParent();
     }
-
-  }while (changed);
-  return true;
-}
-
-bool DeadCodeElimination::removeTriviallyDeadInstr(BasicBlock& bb){
-  bool changed = false;
-  std::stack<Instruction*> deadInstrStack;
-  for (auto& inst : bb) {
-    if (isInstructionTriviallyDead(&inst)){
-      deadInstrStack.push(&inst);
-      changed = true;
-    }
+    if (!changed) break;
   }
-  while (!deadInstrStack.empty()){
-    deadInstrStack.top()->eraseFromParent();
-    deadInstrStack.pop();
-  }
-  return changed;
-}
 
-bool DeadCodeElimination::constantFolding(Function &fn){
-  for (auto& bb : fn){
-    ConstantFoldTerminator(&bb);
-  }
-  return true;
+  return changed? PreservedAnalyses::all() : PreservedAnalyses::none();
 }
 
 // --------------------------------------------------------------------------------
