@@ -35,29 +35,53 @@ PreservedAnalyses DeadCodeElimination::run(Function& fn,
   errs() << "running dead code elimination...\n";
 
   std::vector<Value*> deadInstrVec;
-
+  DenseSet<Value*> usedValues;
   for (auto& bb : fn){
-    for (auto& inst : bb){
+    for (auto& inst : reverse(bb)){
       if (isa<ReturnInst>(inst))  continue;
 
-      /// Store instruction
-      // if the operand whose value is modified has no uses,
-      // the operand is dead and hence the current instruction
-      // and the definition of operand are also dead
-      if (isa<StoreInst>(inst)){
+      if (isa<AllocaInst>(inst)){
+        if (usedValues.count(&inst) == 0){
+          deadInstrVec.push_back(&inst);
+        }
+      }
+      else if (isa<StoreInst>(inst)){
+        /// Store instruction
+        // if the operand whose value is modified has no uses,
+        // the operand is dead and hence the current instruction
+        // and the definition of operand are also dead
         auto* storeInst = dyn_cast<StoreInst>(&inst);
         auto* memPtr = storeInst->getOperand(1);
         errs() << inst << ' ' << memPtr->getNumUses() << " : " << storeInst->getNumUses() << '\n';
-
+        if (usedValues.count(memPtr) == 0){
+          // this store is dead
+          deadInstrVec.push_back(storeInst);
+        }
+        else{
+          usedValues.insert(memPtr);
+          auto* storedValue = storeInst->getOperand(0);
+          if (isa<Instruction>(storedValue)){
+            usedValues.insert(storedValue);
+          }
+        }
       }
+      else{
+        /// instruction with a non-void return value
+        // if the current instruction has no use following it
+        // declare it as a dead instruction
+        if (inst.getType() != Type::getVoidTy(fn.getContext())){
+          errs() << inst << ' ' << inst.getNumUses() << '\n';
+          if (inst.getNumUses() == 0){
+            deadInstrVec.push_back(&inst);
+          }
+        }
 
-      /// instruction with a non-void return value
-      // if the current instruction has no use following it
-      // declare it as a dead instruction
-      if (inst.getType() != Type::getVoidTy(fn.getContext())){
-        errs() << inst << ' ' << inst.getNumUses() << '\n';
-        if (inst.getNumUses() == 0){
-          deadInstrVec.push_back(&inst);
+        for (size_t i = 0; i < inst.getNumOperands(); ++i){
+          auto* op = inst.getOperand(i);
+          errs() << "inserting " << *op << " into the usedValues set\n";
+          if (isa<Instruction>(op)) {
+            usedValues.insert(op);
+          }
         }
       }
 
