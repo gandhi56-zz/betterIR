@@ -1,7 +1,6 @@
 import sys
 import json
 import os
-import glob
 
 data = {}
 
@@ -16,12 +15,6 @@ def parseJSON(config_file):
 
 def run(pass_name, input_dir, output_dir):
     global data
-    # print('dir_path', dir_path)
-    # for input_file in glob.iglob(dir_path + '**.ll', recursive=True):
-    #     print('=>', input_file)
-    #     if os.path.isfile(input_file):
-    #         output_file = input_file.replace('input', 'output')
-    #         run_opt(pass_name, input_file, output_file)
 
     for subdir, dirs, files in os.walk(input_dir):
         for file in files:
