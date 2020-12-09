@@ -70,7 +70,7 @@ PreservedAnalyses DeadCodeElimination::run(Function& fn,
         // if the current instruction has no use following it
         // declare it as a dead instruction
         if (inst.getType() != Type::getVoidTy(fn.getContext())){
-          errs() << inst << ' ' << inst.getNumUses() << '\n';
+//          errs() << inst << ' ' << inst.getNumUses() << '\n';
           if (inst.getNumUses() == 0){
             deadInstrVec.push_back(&inst);
           }

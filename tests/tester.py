@@ -1,28 +1,53 @@
-
 import sys
 import json
 import os
+import glob
 
 data = {}
 
-def parseJSON(configFile):
-    global data
-    with open(configFile, 'r') as fileStream:
-        data = json.load(fileStream)
-        for passName in data:
-            run(passName)
 
-def run(passName):
+def parseJSON(config_file):
     global data
-    inputFile = '/home/anshil/workspace/betterIR/tests/DeadCodeElimination/input/gold.ll'
-    outputFile = '/home/anshil/workspace/betterIR/tests/DeadCodeElimination/output/gold.ll'
-    cmd = '{} -load-pass-plugin {} -passes="{}" {} -S -o {}'.format(data[passName]['opt'], data[passName]['lib-path'], data[passName]['name'], inputFile, outputFile)
+    with open(config_file, 'r') as file_stream:
+        data = json.load(file_stream)
+        for pass_name in data:
+            run(pass_name, data[pass_name]['tests-dir'] + "input/", data[pass_name]['tests-dir'] + 'output/')
+
+
+def run(pass_name, input_dir, output_dir):
+    global data
+    # print('dir_path', dir_path)
+    # for input_file in glob.iglob(dir_path + '**.ll', recursive=True):
+    #     print('=>', input_file)
+    #     if os.path.isfile(input_file):
+    #         output_file = input_file.replace('input', 'output')
+    #         run_opt(pass_name, input_file, output_file)
+
+    for subdir, dirs, files in os.walk(input_dir):
+        for file in files:
+            if file[-3:] == '.ll':
+                input_file = os.path.join(subdir, file)
+                output_subdir = subdir.replace('input', 'output')
+                output_file = input_file.replace('input', 'output')
+                if not os.path.isdir(output_subdir):
+                    os.system('mkdir ' + output_subdir)
+                run_opt(pass_name, input_file, output_file)
+
+
+def run_opt(passName, inputFile, outputFile):
+    cmd = '{} -load-pass-plugin {} -passes="{}" {} -S -o {}'.format(
+        data[passName]['opt'],
+        data[passName]['lib-path'],
+        data[passName]['name'],
+        inputFile, outputFile)
     print('Running {}'.format(cmd))
     os.system(cmd)
+    print('\n\n')
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print('Please provide a json file as a commandline argument to run the tester.')
         exit(-1)
-    jsonFile = sys.argv[1]
-    parseJSON(jsonFile)
+    json_file = sys.argv[1]
+    parseJSON(json_file)
