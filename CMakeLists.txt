@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 14 CACHE STRING "")
 
 # ensure that LLVMConfig.cmake is on search path
 set(LLVM_INS "" CACHE PATH "LLVM installation directory")
-set(LLVM_CONFIG_DIR "${LLVM_INS}/lib/cmake/llvm/")
+set(LLVM_CONFIG_DIR "/usr/lib/llvm-10/lib/cmake/llvm/")
 list(APPEND CMAKE_PREFIX_PATH "${LLVM_CMAKE_CONFIG_DIR}")
 
 # load LLVMConfig.cmake

@@ -8,52 +8,73 @@
  *
  * New PM
  *    opt -load-pass-plugin cmake-build-debug/lib/libDeadCodeElimination.so
- *    -passes="dead-code" tests/DeadCodeElimination/input/foo00.ll -disable-output
+ *    -passes="dead-code" tests/DeadCodeElimination/input/foo00.ll
+ * -disable-output
  */
 
-#include "LivenessAnalysis.h"
 #include "DeadCodeElimination.h"
+
+#include <stack>
+#include <vector>
+
+#include "llvm/ADT/Statistic.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
-#include <stack>
-#include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/Local.h"
-#include "llvm/ADT/Statistic.h"
 
 #define DEBUG_TYPE "dead-code"
 
 #define PASS_NAME "dce"
 
-STATISTIC(numInstrDeleted, "Number of Instructions Eliminated");
-STATISTIC(numBasicBlocksDeleted, "Number of Basic Blocks Eliminated");
-
-PreservedAnalyses
-DeadCodeElimination::run(Function& fn, FunctionAnalysisManager&){
+PreservedAnalyses DeadCodeElimination::run(Function& fn,
+                                           FunctionAnalysisManager&) {
   bool changed;
-  while (1){
-    changed = false;
-    std::vector<Value*> deadInstrList;
-    for (auto& bb : fn){
-      for (auto& inst : bb){
-        if (isa<ReturnInst>(inst))  continue;
+  errs() << "running dead code elimination...\n";
+
+  std::vector<Value*> deadInstrVec;
+
+  for (auto& bb : fn){
+    for (auto& inst : bb){
+      if (isa<ReturnInst>(inst))  continue;
+
+      /// Store instruction
+      // if the operand whose value is modified has no uses,
+      // the operand is dead and hence the current instruction
+      // and the definition of operand are also dead
+      if (isa<StoreInst>(inst)){
+        auto* storeInst = dyn_cast<StoreInst>(&inst);
+        auto* memPtr = storeInst->getOperand(1);
+        errs() << inst << ' ' << memPtr->getNumUses() << " : " << storeInst->getNumUses() << '\n';
+
+      }
+
+      /// instruction with a non-void return value
+      // if the current instruction has no use following it
+      // declare it as a dead instruction
+      if (inst.getType() != Type::getVoidTy(fn.getContext())){
+        errs() << inst << ' ' << inst.getNumUses() << '\n';
         if (inst.getNumUses() == 0){
-          errs() << "removing " << inst << '\n';
-          deadInstrList.push_back(&inst);
-          changed = true;
+          deadInstrVec.push_back(&inst);
         }
       }
-    }
 
-    for (auto* val : deadInstrList){
-      auto* deadInstr = dyn_cast<Instruction>(val);
-      deadInstr->eraseFromParent();
     }
-    if (!changed) break;
   }
 
-  return changed? PreservedAnalyses::all() : PreservedAnalyses::none();
+  errs() << "\n# dead instructions = " << deadInstrVec.size() << '\n';
+
+  for (auto* inst : deadInstrVec){
+    auto* deadInst = dyn_cast<Instruction>(inst);
+    errs() << "removing " << *deadInst << '\n';
+    deadInst->eraseFromParent();
+    changed = true;
+  }
+
+
+  return changed ? PreservedAnalyses::all() : PreservedAnalyses::none();
 }
 
 // --------------------------------------------------------------------------------
@@ -62,9 +83,9 @@ DeadCodeElimination::run(Function& fn, FunctionAnalysisManager&){
 
 PassPluginLibraryInfo getDCEPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, PASS_NAME, LLVM_VERSION_STRING,
-          [](PassBuilder &PB) {
+          [](PassBuilder& PB) {
             PB.registerPipelineParsingCallback(
-                [](StringRef Name, FunctionPassManager &FPM,
+                [](StringRef Name, FunctionPassManager& FPM,
                    ArrayRef<PassBuilder::PipelineElement>) {
                   if (Name == "dead-code") {
                     FPM.addPass(DeadCodeElimination());
@@ -75,7 +96,6 @@ PassPluginLibraryInfo getDCEPluginInfo() {
           }};
 }
 
-extern "C" LLVM_ATTRIBUTE_WEAK ::PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
+extern "C" LLVM_ATTRIBUTE_WEAK ::PassPluginLibraryInfo llvmGetPassPluginInfo() {
   return getDCEPluginInfo();
 }
