@@ -36,9 +36,9 @@ PreservedAnalyses DeadCodeElimination::run(Function& fn,
 
   std::vector<Value*> deadInstrVec;
   DenseSet<Value*> usedValues;
-  for (auto& bb : fn){
+  for (auto& bb : reverse(fn)){
     for (auto& inst : reverse(bb)){
-      if (isa<ReturnInst>(inst))  continue;
+      if (inst.isTerminator())  continue;
 
       if (isa<AllocaInst>(inst)){
         if (usedValues.count(&inst) == 0){
@@ -52,7 +52,7 @@ PreservedAnalyses DeadCodeElimination::run(Function& fn,
         // and the definition of operand are also dead
         auto* storeInst = dyn_cast<StoreInst>(&inst);
         auto* memPtr = storeInst->getOperand(1);
-        errs() << inst << ' ' << memPtr->getNumUses() << " : " << storeInst->getNumUses() << '\n';
+//        errs() << inst << ' ' << memPtr->getNumUses() << " : " << storeInst->getNumUses() << '\n';
         if (usedValues.count(memPtr) == 0){
           // this store is dead
           deadInstrVec.push_back(storeInst);
@@ -76,9 +76,11 @@ PreservedAnalyses DeadCodeElimination::run(Function& fn,
           }
         }
 
+        // insert it each operand of the instruction into the
+        // usedValues set
         for (size_t i = 0; i < inst.getNumOperands(); ++i){
           auto* op = inst.getOperand(i);
-          errs() << "inserting " << *op << " into the usedValues set\n";
+//          errs() << "inserting " << *op << " into the usedValues set\n";
           if (isa<Instruction>(op)) {
             usedValues.insert(op);
           }
@@ -89,12 +91,13 @@ PreservedAnalyses DeadCodeElimination::run(Function& fn,
   }
 
   errs() << "\n# dead instructions = " << deadInstrVec.size() << '\n';
+  for (auto* inst : deadInstrVec) errs() << "removing " << *inst << '\n';
+
+  changed = !deadInstrVec.empty();
 
   for (auto* inst : deadInstrVec){
     auto* deadInst = dyn_cast<Instruction>(inst);
-    errs() << "removing " << *deadInst << '\n';
     deadInst->eraseFromParent();
-    changed = true;
   }
 
 
