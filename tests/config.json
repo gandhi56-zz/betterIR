@@ -1,0 +1,8 @@
+{
+    "dead-code-elimination":{
+       "name": "dead-code",
+       "tests-dir": "/home/anshil/workspace/betterIR/tests/DeadCodeElimination",
+       "opt": "/home/anshil/llvm-ins/bin/opt",
+       "lib-path": "/home/anshil/workspace/betterIR/cmake-build-debug/lib/libDeadCodeElimination.so"
+    }
+}

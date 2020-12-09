@@ -38,7 +38,7 @@ PreservedAnalyses DeadCodeElimination::run(Function& fn,
   DenseSet<Value*> usedValues;
   for (auto& bb : reverse(fn)){
     for (auto& inst : reverse(bb)){
-      if (inst.isTerminator())  continue;
+      if (inst.isTerminator() or isa<CallInst>(inst))  continue;
 
       if (isa<AllocaInst>(inst)){
         if (usedValues.count(&inst) == 0){
