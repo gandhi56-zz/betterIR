@@ -27,7 +27,7 @@
 
 #define DEBUG_TYPE "dead-code"
 
-#define PASS_NAME "dce"
+#define PASS_NAME "dead-code"
 
 PreservedAnalyses DeadCodeElimination::run(Function& fn,
                                            FunctionAnalysisManager&) {

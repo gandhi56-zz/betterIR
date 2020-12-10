@@ -18,9 +18,6 @@
 
 		<!-- Header -->
 			<section id="header">
-
-
-
 				<header style=font-family:'Courier,serif';font-size:36px;>
 					betterIR
 				</header>
@@ -61,6 +58,53 @@
 	</p>
 </div>
 </section>
+
+<!-- Dead Code elimination -->
+<section id="DeadCodeElimination">
+	<div class="container">
+		<header class="major">
+			<h2>Dead Code Elimination</h2>
+		</header>
+		<p>
+			Dead code elimination is a code size optimization algorithm which removes any instruction that is dead or
+			not required by the program to maintain semantics.
+		</p>
+		<p>
+			Following is the algorithm I used to implement this optimization pass:
+		<pre>
+			<code>
+1. initialize: used = {}
+2. for each bb, in fn, in reverse order
+3. 	for each inst in bb, in reverse order
+4.		if inst is an alloca instruction then
+5.			if inst is not in the used set
+6.				mark inst as dead
+7.		else if inst is a store instruction then
+8.			if inst is not in the used set then
+9.				mark inst as dead
+10.			else
+11.				insert the operands into used
+12.		else
+13.			if inst has no uses
+14.				mark inst as dead
+15.			else
+16.				insert the operands into used
+17.
+18. for each instruction inst
+19.	    if inst was marked as dead
+20.		    erase it
+
+			</code>
+		</pre>
+		<p>
+			I implemented this algorithm as a function pass, that is,
+			the algorithm assumes that no function call is dead as some function calls, like file I/O calls, may not
+			necessarily return a <i>live</i> variable but may perform operations that could potentially affect the
+			externals of the program.
+		</p>
+	</div>
+</section>
+
 
 
 							<section id="contact">
