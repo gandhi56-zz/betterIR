@@ -23,6 +23,7 @@
 				<nav id="nav">
 					<ul>
 						<li><a href="#overview" class="active">Overview</a></li>
+						<li><a href="#compileRun">Compile and run</a></li>
 						<li><a href="#DeadCodeElimination">Dead code elimination</a></li>
 						<li><a href="#contact">Contact</a></li>
 						<li><a href="https://gandhi56.github.io">Return to home</a></li>
@@ -62,7 +63,7 @@
 </div>
 </section>
 
-<section id="Compile and run">
+<section id="compileRun">
 <div class="container">
 <header class="major">
 	<h2>Compile</h2>
@@ -78,9 +79,9 @@ To build this project, the following dependencies are required:<ul>
 <p>
 Follow the steps below to compile this project:<ol>
 	<li>Navigate to the root directory of this repository after cloning it.</li>
-	<li>In the <u>CMakeLists.txt</u>, specify the path to `llvm x` and set the path to the LLVM_INS variable.</li>
+	<li>In the <u>CMakeLists.txt</u>, set the value of the LLVM_INS variable to the path of the llvm executable on your local machine.</li>
 	<li>Set the version of LLVM that you use for finding the CMake package of the appropriate version.</li>
-	<li><code>mkdir build && cd build && cmake ..`</code></li>
+	<li><code>mkdir build && cd build && cmake ..</code></li>
 	<li><code>make</code></li>
 
 </ol>
@@ -93,7 +94,9 @@ Assuming the build was successful, you will see a directory called `lib` contain
 </header>
 
 The passes may either be run manually by using the LLVM's `opt` tool:<br>
-<code>opt -load-pass-plugin &ltpath-to-so&gt -passes=&ltpass-name&gt &lt input-file&gt -S -o &ltoutput-file&gt -debug</code>
+<pre><code>
+opt -load-pass-plugin &ltpath-to-so&gt -passes=&ltpass-name&gt &lt input-file&gt -S -o &ltoutput-file&gt -debug
+</code></pre>
 
 <p>
 
