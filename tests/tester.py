@@ -4,7 +4,6 @@ import os
 
 data = {}
 
-
 def parseJSON(config_file):
     global data
     with open(config_file, 'r') as file_stream:

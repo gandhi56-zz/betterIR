@@ -9,7 +9,6 @@
 		<title>betterIR</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		
 		<meta name="description" content="betterIR">
 		
 		<link rel="stylesheet" href="assets/css/main.css" />
@@ -24,6 +23,7 @@
 				<nav id="nav">
 					<ul>
 						<li><a href="#overview" class="active">Overview</a></li>
+						<li><a href="#DeadCodeElimination">Dead code elimination</a></li>
 						<li><a href="#contact">Contact</a></li>
 						<li><a href="https://gandhi56.github.io">Return to home</a></li>
 					</ul>
@@ -56,6 +56,61 @@
 			<li> Liveness analysis (Testing in progress) </li>
 		</ol>
 	</p>
+	<p>
+		I also implemented a python3 script called tester which takes in a configuration file in JSON format and runs the LLVM optimizer across all input files in the specified directory.
+	</p>
+</div>
+</section>
+
+<section id="Compile and run">
+<div class="container">
+<header class="major">
+	<h2>Compile</h2>
+</header>
+
+<p>
+To build this project, the following dependencies are required:<ul>
+<li>CMake 3.0.0+</li>
+<li>LLVM >= 8.0</li>
+<li>Python 3.x.x (to run the tester)</li>
+</ul></p>
+
+<p>
+Follow the steps below to compile this project:<ol>
+	<li>Navigate to the root directory of this repository after cloning it.</li>
+	<li>In the <u>CMakeLists.txt</u>, specify the path to `llvm x` and set the path to the LLVM_INS variable.</li>
+	<li>Set the version of LLVM that you use for finding the CMake package of the appropriate version.</li>
+	<li><code>mkdir build && cd build && cmake ..`</code></li>
+	<li><code>make</code></li>
+
+</ol>
+
+Assuming the build was successful, you will see a directory called `lib` containing the shared object libraries for each of the built passes.
+</p>
+
+<header class="major">
+	<h2>Run</h2>
+</header>
+
+The passes may either be run manually by using the LLVM's `opt` tool:<br>
+<code>opt -load-pass-plugin &ltpath-to-so&gt -passes=&ltpass-name&gt &lt input-file&gt -S -o &ltoutput-file&gt -debug</code>
+
+<p>
+
+Alternatively, the tester may also be used to optimize a collection of files:
+<ol>
+<li>Configure `tests/config.json`:
+	<ul>
+	<li><code>tests-dir</code>: full path to the directory containing the test suite for the pass. The directory must contain the directories `input` and `output`, where the `input` directory contains `*.ll` files which will be optimized.</li>
+	<li><code>opt</code>: full path to the LLVM's optimizer executable.</li>
+	<li><code>lib-path</code>: path to the pass' shared object file</li></ul>
+	
+	</li>
+<li>Run `python3 tests/tester.py tests/config.json`</li>
+</ol>
+
+</p>
+
 </div>
 </section>
 
@@ -70,9 +125,9 @@
 			not required by the program to maintain semantics.
 		</p>
 		<p>
-			Following is the algorithm I used to implement this optimization pass:
-		<pre>
-			<code>
+			Following is the algorithm I designed to implement this optimization pass:
+<pre>
+<code>
 1. initialize: used = {}
 2. for each bb, in fn, in reverse order
 3. 	for each inst in bb, in reverse order
@@ -92,31 +147,41 @@
 17.
 18. for each instruction inst
 19.	    if inst was marked as dead
-20.		    erase it
+20.		    erase inst
 
-			</code>
-		</pre>
-		<p>
-			I implemented this algorithm as a function pass, that is,
-			the algorithm assumes that no function call is dead as some function calls, like file I/O calls, may not
-			necessarily return a <i>live</i> variable but may perform operations that could potentially affect the
-			externals of the program.
-		</p>
+</code>
+</pre>
+<p>
+	I implemented this algorithm as a function pass. That is,
+	the algorithm operates on each function sequentially. The algorithm 
+	iterates over the instructions in reverse order which avoids
+	the need to look forward into the to determine if a variable is
+	live at that point as well as the demand for liveness analysis
+	preprocess. 
+</p>
+
+<p>
+	This algorithm assumes that function calls are never dead as a function
+	may be responsible for performing operations externally, like file I/O.
+	Furthermore, terminator instructions like branches and returns are never
+	dead as it breaks the CFG and a replacement for them is required to preserve
+	the structure of the CFG.
+</p>
 	</div>
 </section>
 
 
 
-							<section id="contact">
-								<div class="container">
-									<header class="major">
-										<h2>Contact Me</h2>
-									</header>
+<section id="contact">
+	<div class="container">
+		<header class="major">
+			<h2>Contact Me</h2>
+		</header>
 
-									Feel free to email me at <a href="mailto:gandhi21299@gmail.com?Subject=Hello%20again">gandhi21299@gmail.com</a>
+		Feel free to email me at <a href="mailto:gandhi21299@gmail.com?Subject=Hello%20again">gandhi21299@gmail.com</a>
 
-								</div>
-							</section>
+	</div>
+</section>
 
 
 						<!-- Five -->
