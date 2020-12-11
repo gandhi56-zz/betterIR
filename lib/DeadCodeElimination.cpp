@@ -44,7 +44,7 @@ PreservedAnalyses DeadCodeElimination::run(Function& fn,
       // if the current instruction has no use following it
       // declare it as a dead instruction
       // FIXME: dead instruction condition needs to be fixed
-      if (inst.getType() != Type::getVoidTy(fn.getContext()) and (liveIn[&bb].count(&inst) == 0)){
+      if (inst.getType() != Type::getVoidTy(fn.getContext()) and inst.getNumUses() == 0){
         deadInstrVec.push_back(&inst);
       }
 
