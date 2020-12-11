@@ -19,7 +19,8 @@ struct LivenessAnalysis : public PassInfoMixin<LivenessAnalysis> {
   PreservedAnalyses run(Function &fn, FunctionAnalysisManager &);
   void computeGenKillVariables(Function *fn);
   static void debugPrintVarSet(LivenessAnalysis::VarSet& s);
-
+  void computeLiveOut(BasicBlock* bb);
+  void computeLiveIn(BasicBlock* bb);
 };
 }
 

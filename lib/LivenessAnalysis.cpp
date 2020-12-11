@@ -17,45 +17,17 @@
 
 PreservedAnalyses
 LivenessAnalysis::run(llvm::Function& fn, llvm::FunctionAnalysisManager&){
-
   computeGenKillVariables(&fn);
-
-  // compute liveIn and liveOut sets for each basic block
-  bool changed = true;
-  int iter = 0;
-  while (changed) {
-    // errs() << "iteration " << iter++ << "...\n";
-
-    // track whether this iteration changed the liveIn set or not
-    changed = false;
-
-    // iterate over each basic block
+  while (true) {
+    bool changed = false;
     for (BasicBlock& bb : reverse(fn)){
-
       VarSet prevOut = liveOut[&bb];
       VarSet prevIn = liveIn[&bb];
-
-      // compute liveOut set for the current basic block
-      liveOut[&bb].clear();
-      for (BasicBlock* nextBB : successors(&bb)){
-        for (auto& liveVar : liveIn[nextBB]){
-          liveOut[&bb].insert(liveVar);
-        }
-      }
-      if (prevOut != liveOut[&bb]) changed = true;
-
-      // compute liveIn set for the current basic block
-      liveIn[&bb].clear();
-      liveIn[&bb] = use[&bb];
-      for (auto& var : liveOut[&bb]){
-        if (def[&bb].count(var) == 0){
-          liveIn[&bb].insert(var);
-        }
-      }
-
-      // check if the liveIn set has reached a fixed point
-      if (liveIn[&bb] != prevIn)  changed = true;
+      computeLiveOut(&bb);
+      computeLiveIn(&bb);
+      changed |= (liveOut[&bb] != prevOut) or (liveIn[&bb] != prevIn);
     }
+    if (!changed) break;
   }
 
   for (auto& bb : fn){
@@ -68,6 +40,25 @@ LivenessAnalysis::run(llvm::Function& fn, llvm::FunctionAnalysisManager&){
     errs() << "\n---------------------------------\n";
   }
   return llvm::PreservedAnalyses::all();
+}
+
+void LivenessAnalysis::computeLiveOut(BasicBlock* bb){
+  liveOut[bb].clear();
+  for (BasicBlock* nextBB : successors(bb)){
+    for (auto& liveVar : liveIn[nextBB]){
+      liveOut[bb].insert(liveVar);
+    }
+  }
+}
+
+void LivenessAnalysis::computeLiveIn(BasicBlock* bb){
+  liveIn[bb].clear();
+  liveIn[bb] = use[bb];
+  for (auto& var : liveOut[bb]){
+    if (def[bb].count(var) == 0){
+      liveIn[bb].insert(var);
+    }
+  }
 }
 
 void LivenessAnalysis::computeGenKillVariables(Function *fn) {
