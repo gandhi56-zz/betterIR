@@ -1,8 +1,15 @@
 {
-    "dead-code-elimination":{
-       "name": "dead-code",
+    "liveness":{
+        "tests-dir": "/home/anshil/workspace/betterIR/tests/LivenessAnalysis/",
+        "opt": "/usr/bin/opt-11",
+        "lib-path": "/home/anshil/workspace/betterIR/cmake-build-debug/lib/libLivenessAnalysis.so",
+        "analysis": true
+    },
+
+    "dead-code":{
        "tests-dir": "/home/anshil/workspace/betterIR/tests/DeadCodeElimination/",
        "opt": "/usr/bin/opt-11",
-       "lib-path": "/home/anshil/workspace/betterIR/cmake-build-debug/lib/libDeadCodeElimination.so"
+       "lib-path": "/home/anshil/workspace/betterIR/cmake-build-debug/lib/libDeadCodeElimination.so",
+       "analysis": false
     }
 }
