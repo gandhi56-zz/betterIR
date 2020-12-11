@@ -3,13 +3,13 @@ import json
 import os
 
 data = {}
+pass_name = None
 
 def parseJSON(config_file):
-    global data
+    global data, pass_name
     with open(config_file, 'r') as file_stream:
         data = json.load(file_stream)
-        for pass_name in data:
-            run(pass_name, data[pass_name]['tests-dir'] + "input/", data[pass_name]['tests-dir'] + 'output/')
+        run(pass_name, data[pass_name]['tests-dir'] + "input/", data[pass_name]['tests-dir'] + 'output/')
 
 
 def run(pass_name, input_dir, output_dir):
@@ -25,21 +25,24 @@ def run(pass_name, input_dir, output_dir):
                     os.system('mkdir ' + output_subdir)
                 run_opt(pass_name, input_file, output_file)
 
-
 def run_opt(passName, inputFile, outputFile):
+    global pass_name
     cmd = '{} -load-pass-plugin {} -passes="{}" {} -S -o {}'.format(
         data[passName]['opt'],
         data[passName]['lib-path'],
-        data[passName]['name'],
+        pass_name,
         inputFile, outputFile)
     print('Running {}'.format(cmd))
     os.system(cmd)
     print('\n\n')
 
+def help():
+    print("Usage: python3 tester.py <path-to-config> <pass-name>\n")
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print('Please provide a json file as a commandline argument to run the tester.')
+        help()
         exit(-1)
     json_file = sys.argv[1]
+    pass_name = sys.argv[2]
     parseJSON(json_file)

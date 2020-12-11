@@ -1,6 +1,11 @@
 {
-    "dead-code-elimination":{
-       "name": "dead-code",
+    "liveness":{
+        "tests-dir": "/home/anshil/workspace/betterIR/tests/LivenessAnalysis/",
+        "opt": "/usr/bin/opt-11",
+        "lib-path": "/home/anshil/workspace/betterIR/cmake-build-debug/lib/libLivenessAnalysis.so"
+    },
+
+    "dead-code":{
        "tests-dir": "/home/anshil/workspace/betterIR/tests/DeadCodeElimination/",
        "opt": "/usr/bin/opt-11",
        "lib-path": "/home/anshil/workspace/betterIR/cmake-build-debug/lib/libDeadCodeElimination.so"
