@@ -13,23 +13,22 @@ define dso_local i32 @main() #0 {
   store i32 0, i32* %2, align 4
   br label %3
 
-3:                                                ; preds = %9, %0
+3:                                                ; preds = %8, %0
   %4 = load i32, i32* %2, align 4
-  %5 = icmp slt i32 %4, 10
-  br i1 %5, label %6, label %12
+  br i1 <badref>, label %5, label %11
 
-6:                                                ; preds = %3
-  %7 = load i32, i32* %2, align 4
-  %8 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str, i64 0, i64 0), i32 %7)
-  br label %9
+5:                                                ; preds = %3
+  %6 = load i32, i32* %2, align 4
+  %7 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @.str, i64 0, i64 0), i32 %6)
+  br label %8
 
-9:                                                ; preds = %6
-  %10 = load i32, i32* %2, align 4
-  %11 = add nsw i32 %10, 1
-  store i32 %11, i32* %2, align 4
+8:                                                ; preds = %5
+  %9 = load i32, i32* %2, align 4
+  %10 = add nsw i32 %9, 1
+  store i32 %10, i32* %2, align 4
   br label %3
 
-12:                                               ; preds = %3
+11:                                               ; preds = %3
   ret i32 0
 }
 

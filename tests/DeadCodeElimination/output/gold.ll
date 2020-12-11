@@ -15,8 +15,7 @@ define dso_local i32 @main(i32 %0, i8** %1) #0 {
   store i8** %1, i8*** %5, align 8
   %6 = load i32, i32* %4, align 4
   %7 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @.str, i64 0, i64 0), i32 %6)
-  %8 = load i32, i32* %4, align 4
-  ret i32 %8
+  ret i32 <badref>
 }
 
 declare dso_local i32 @printf(i8*, ...) #1
