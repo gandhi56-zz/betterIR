@@ -17,9 +17,12 @@
 PreservedAnalyses DeadStoreElimination::run(Function& fn,
                                            FunctionAnalysisManager&) {
   
-  DenseMap<Value*, Instruction*> val2Store;
-  std::vector<Value*> deadInstrVec;
+  bool changed = false;
   for (auto& bb : fn){
+    
+    DenseMap<Value*, Instruction*> val2Store;
+    std::vector<Value*> deadInstrVec;
+
     for (auto& inst : bb){
       if (isa<StoreInst>(inst)){
         Value* changedValue = inst.getOperand(1);
@@ -36,17 +39,18 @@ PreservedAnalyses DeadStoreElimination::run(Function& fn,
             val2Store[op] = nullptr;
         }
       }
-
     }
+
+    // remove all dead stores
+    for (auto& instr : deadInstrVec){
+      errs() << "removing " << *instr << '\n';
+      dyn_cast<Instruction>(instr)->eraseFromParent();
+      changed = true;
+    }
+
   }
 
-  // remove all dead stores
-  for (auto& instr : deadInstrVec){
-    errs() << "removing " << *instr << '\n';
-    dyn_cast<Instruction>(instr)->eraseFromParent();
-  }
-
-  return deadInstrVec.empty() ? PreservedAnalyses::none() : PreservedAnalyses::all();
+  return !changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
 }
 
 // --------------------------------------------------------------------------------
