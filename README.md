@@ -3,8 +3,8 @@
 betterIR is my personal research and development lab where I implement various 
 compiler optimizations as out-of-tree LLVM passes. Currently, this repository
 implements:
+* Liveness analysis
 * Dead code elimination
-* Liveness analysis (Testing in progress)
 
 ## Compile
 To build this project, the following dependencies are required:

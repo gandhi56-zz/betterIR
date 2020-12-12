@@ -12,17 +12,7 @@ using namespace llvm;
 
 namespace {
 struct DeadCodeElimination : public PassInfoMixin<DeadCodeElimination> {
-  using VarSet = DenseSet<const Value*>;
-  DenseMap<BasicBlock*, VarSet>  use, def;
-  DenseMap<BasicBlock*, VarSet> liveIn, liveOut;
-  
   PreservedAnalyses run(Function &fn, FunctionAnalysisManager &);
-  
-  void computeLiveness(Function& fn);
-  void computeGenKillVariables(Function *fn);
-  static void debugPrintVarSet(VarSet& s);
-  void computeLiveOut(BasicBlock* bb);
-  void computeLiveIn(BasicBlock* bb);
 };
 }
 

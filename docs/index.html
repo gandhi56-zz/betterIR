@@ -24,6 +24,7 @@
 					<ul>
 						<li><a href="#overview" class="active">Overview</a></li>
 						<li><a href="#compileRun">Compile and run</a></li>
+						<li><a href="#LivenessAnalysis">Liveness Analysis</a></li>
 						<li><a href="#DeadCodeElimination">Dead code elimination</a></li>
 						<li><a href="#contact">Contact</a></li>
 						<li><a href="https://gandhi56.github.io">Return to home</a></li>
@@ -54,7 +55,7 @@
 		implements:
 		<ol>
 			<li> Liveness analysis</li>
-			<li> Dead code elimination (in progress) </li>
+			<li> Dead code elimination</li>
 		</ol>
 	</p>
 	<p>
@@ -118,6 +119,18 @@ Alternatively, the tester may also be used to optimize a collection of files:
 </section>
 
 <!-- Dead Code elimination -->
+<section id="LivenessAnalysis">
+	<div class="container">
+		<header class="major">
+			<h2>Liveness analysis</h2>
+		</header>
+		<p>
+			Article will be here soon...
+		</p>
+	</div>
+</section>
+
+<!-- Dead Code elimination -->
 <section id="DeadCodeElimination">
 	<div class="container">
 		<header class="major">
@@ -127,49 +140,6 @@ Alternatively, the tester may also be used to optimize a collection of files:
 			Dead code elimination is a code size optimization algorithm which removes any instruction that is dead or
 			not required by the program to maintain semantics.
 		</p>
-		<p>
-			Following is the algorithm I designed to implement this optimization pass:
-<pre>
-<code>
-1. initialize: used = {}
-2. for each bb, in fn, in reverse order
-3. 	for each inst in bb, in reverse order
-4.		if inst is an alloca instruction then
-5.			if inst is not in the used set
-6.				mark inst as dead
-7.		else if inst is a store instruction then
-8.			if inst is not in the used set then
-9.				mark inst as dead
-10.			else
-11.				insert the operands into used
-12.		else
-13.			if inst has no uses
-14.				mark inst as dead
-15.			else
-16.				insert the operands into used
-17.
-18. for each instruction inst
-19.	    if inst was marked as dead
-20.		    erase inst
-
-</code>
-</pre>
-<p>
-	I implemented this algorithm as a function pass. That is,
-	the algorithm operates on each function sequentially. The algorithm 
-	iterates over the instructions in reverse order which avoids
-	the need to look forward into the program to determine if a variable is
-	live at that point as well as the demand for liveness analysis
-	preprocess. 
-</p>
-
-<p>
-	This algorithm assumes that function calls are never dead as a function
-	may be responsible for performing operations externally, like file I/O.
-	Furthermore, terminator instructions like branches and returns are never
-	dead as it breaks the CFG and a replacement for them is required to preserve
-	the structure of the CFG.
-</p>
 	</div>
 </section>
 
