@@ -11,5 +11,11 @@
        "opt": "/home/anshil/llvm-ins/bin/opt",
        "lib-path": "/home/anshil/workspace/betterIR/build/lib/libDeadCodeElimination.so",
        "analysis": false
+    },
+    "dead-store":{
+       "tests-dir": "/home/anshil/workspace/betterIR/tests/DeadStoreElimination/",
+       "opt": "/home/anshil/llvm-ins/bin/opt",
+       "lib-path": "/home/anshil/workspace/betterIR/build/lib/libDeadStoreElimination.so",
+       "analysis": false
     }
 }

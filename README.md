@@ -5,6 +5,7 @@ compiler optimizations as out-of-tree LLVM passes. Currently, this repository
 implements:
 * Liveness analysis
 * Dead code elimination
+* Dead store elimination
 
 ## Compile
 To build this project, the following dependencies are required:
