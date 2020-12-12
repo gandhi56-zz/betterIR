@@ -6,6 +6,13 @@
         "analysis": true
     },
 
+    "avail-expr":{
+        "tests-dir": "/home/anshil/workspace/betterIR/tests/AvailableExpressions/",
+        "opt": "/home/anshil/llvm-ins/bin/opt",
+        "lib-path": "/home/anshil/workspace/betterIR/build/lib/libAvailableExpressions.so",
+        "analysis": true
+    },
+
     "dead-code":{
        "tests-dir": "/home/anshil/workspace/betterIR/tests/DeadCodeElimination/",
        "opt": "/home/anshil/llvm-ins/bin/opt",
