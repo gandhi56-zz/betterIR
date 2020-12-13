@@ -8,7 +8,12 @@ using namespace llvm;
 
 namespace{
   struct AvailableExpressions : public PassInfoMixin<AvailableExpressions>{
+    using VarSet = DenseSet<Value*>;
+    DenseMap<BasicBlock*, VarSet> gen, kill;
+    
     PreservedAnalyses run(Function& fn, FunctionAnalysisManager&);
+    void computeKillExpressions(BasicBlock* bb);
+    void computeGenExpressions(BasicBlock* bb);
   };
 }
 
