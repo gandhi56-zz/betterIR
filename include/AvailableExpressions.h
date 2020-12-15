@@ -12,7 +12,7 @@ namespace{
     DenseMap<BasicBlock*, VarSet> gen, kill;
     
     PreservedAnalyses run(Function& fn, FunctionAnalysisManager&);
-    void computeKillExpressions(BasicBlock* bb);
+    void computeKillExpressions(BasicBlock* bb, Function& fn);
     void computeGenExpressions(BasicBlock* bb);
   };
 }

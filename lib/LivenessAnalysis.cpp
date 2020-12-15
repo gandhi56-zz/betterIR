@@ -18,14 +18,26 @@
 PreservedAnalyses
 LivenessAnalysis::run(llvm::Function& fn, llvm::FunctionAnalysisManager&){
   computeGenKillVariables(&fn);
+
+  for (BasicBlock& bb : fn){
+    liveIn[&bb].clear();
+  }
+
   while (true) {
     bool changed = false;
     for (BasicBlock& bb : reverse(fn)){
-      VarSet prevOut = liveOut[&bb];
+      const BasicBlock* currBB = &bb;
+
+      // no computation at exit basic blocks
+      if (successors(currBB).empty()) continue;
+
+      // backup the previously computed liveIn set for this block
       VarSet prevIn = liveIn[&bb];
+
       computeLiveOut(&bb);
-      computeLiveIn(&bb);
-      changed |= (liveOut[&bb] != prevOut) or (liveIn[&bb] != prevIn);
+      if (currBB != &fn.getEntryBlock())
+        computeLiveIn(&bb);
+      changed |= (liveIn[&bb] != prevIn);
     }
     if (!changed) break;
   }
@@ -55,7 +67,7 @@ void LivenessAnalysis::computeLiveIn(BasicBlock* bb){
   liveIn[bb].clear();
   liveIn[bb] = use[bb];
   for (auto& var : liveOut[bb]){
-    if (def[bb].count(var) == 0){
+    if (def[bb].find(var) == def[bb].end()){
       liveIn[bb].insert(var);
     }
   }
@@ -73,7 +85,6 @@ void LivenessAnalysis::computeGenKillVariables(Function *fn) {
           use[&bb].insert(op);
       }
 
-      /// a value was killed by 
       if (cInst->getType() != Type::getVoidTy(fn->getContext())){
         if (!isa<Constant>(cInst))
           def[&bb].insert(cInst);

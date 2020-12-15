@@ -26,6 +26,7 @@ define dso_local i32 @main() #0 {
   br label %15
 
 11:                                               ; preds = %0
+  store i32 9999, i32* %3, align 4
   %12 = load i32, i32* %2, align 4
   %13 = load i32, i32* %3, align 4
   %14 = add nsw i32 %12, %13

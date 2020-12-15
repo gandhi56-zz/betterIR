@@ -1,4 +1,5 @@
 
+#define LIN errs() << __LINE__ << '\n';
 
 #include "AvailableExpressions.h"
 #include <vector>
@@ -22,6 +23,10 @@ PreservedAnalyses AvailableExpressions::run(Function& fn,
     computeGenExpressions(&bb);
   }
 
+  for (auto& bb : fn){
+    computeKillExpressions(&bb, fn);
+  }
+
   return PreservedAnalyses::none();
 }
 
@@ -30,8 +35,41 @@ PreservedAnalyses AvailableExpressions::run(Function& fn,
  * @brief compute all expressions killed by the basic block bb,
  *  store them in kill[bb]
  */
-void AvailableExpressions::computeKillExpressions(BasicBlock* bb){
+void AvailableExpressions::computeKillExpressions(BasicBlock* bb, Function& fn){
+  kill[bb].clear();
 
+  // find all variables killed in this basic block
+  VarSet killedVariables;
+  for (auto& inst : *bb){
+    if (isa<StoreInst>(inst)){
+      killedVariables.insert(inst.getOperand(1));
+    }
+  }
+
+  // loop over all binary expressions in the program
+  for (auto& otherBB : fn){
+    for (auto& E : otherBB){
+      if (!E.isBinaryOp())  continue;
+      auto* binOp = dyn_cast<BinaryOperator>(&E);
+
+      // if bb does not generate binOp and one of its operands
+      // is killed in this basic block, then
+      // insert binOp into the kill set of expressions
+      if (gen[bb].find(binOp) == gen[bb].end()){
+        for (auto& op : binOp->operands()){
+          if (killedVariables.find(op) != killedVariables.end()){
+            kill[bb].insert(binOp);
+          }
+        }
+      }
+
+    }
+  }
+
+
+  for (auto& expr : kill[bb]){
+    errs() << "killed expr : " << *expr << '\n';
+  }
 }
 
 /**
@@ -44,24 +82,44 @@ void AvailableExpressions::computeGenExpressions(BasicBlock* bb){
     if (inst.isBinaryOp()){
       auto* binOp = dyn_cast<BinaryOperator>(&inst);
       gen[bb].insert(binOp);
+    }
+  }
+
+  for (auto& inst : *bb){
+//    errs() << inst << '\n';
+    if (isa<StoreInst>(inst)){
       
-      // for each expr in gen[bb], remove expr if one of its
-      // operands contains the value of inst
+      // get the variable whose value is killed by this
+      // store instruction
+      auto* storeVariable = dyn_cast<StoreInst>(&inst)->getOperand(1);
+//      errs() << "STORE VARIABLE: " << *storeVariable << '\n';
+
+      // loop over each generated expression of this basic block
       for (auto& expr : gen[bb]){
         auto* exprInst = dyn_cast<Instruction>(expr);
+
+        // check if any operand of the generated expression
+        // is the killing variable, then the expression is
+        // not generated anymore
         for (auto& op : exprInst->operands()){
           auto* opInst = dyn_cast<Instruction>(op);
-          if (opInst == &inst){
-            errs() << "removing operand " << opInst << '\n';
-            gen[bb].erase(opInst);
+          if (isa<LoadInst>(opInst)){
+            opInst = dyn_cast<Instruction>(opInst->getOperand(0));
+//            errs() << "108: " << *opInst << '\n';
+//            errs() << "109: " << *storeVariable << '\n';
+            if (opInst == storeVariable){
+              errs() << "removing operand " << *opInst << '\n';
+              gen[bb].erase(exprInst);
+            }
           }
         }
       }
+    
     }
   }
 
   for (auto& expr : gen[bb]){
-    errs() << *expr << '\n';
+    errs() << "generated expression : " << *expr << '\n';
   }
 }
 
