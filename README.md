@@ -17,7 +17,7 @@ To build this project, the following dependencies are required:
 Follow the steps below to compile this project:
 0. Navigate to the root directory of this repository after cloning it.
 1. In the `CMakeLists.txt`, specify the path to `llvm x` and set the path to the LLVM_INS variable.
-2. Set the version of LLVM that you use for finding the CMake package of the appropriate version.
+2. Set the version of LLVM that you gen for finding the CMake package of the appropriate version.
 3. `mkdir build && cd build && cmake ..`
 4. `make`
 
