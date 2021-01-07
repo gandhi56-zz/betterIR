@@ -2,27 +2,20 @@
     "liveness":{
         "tests-dir": "/home/anshil/workspace/gandhi56_git/betterIR/tests/LivenessAnalysis/",
         "opt": "/usr/bin/opt-11",
-        "lib-path": "/home/anshil/workspace/gandhi56_git/betterIR/build/lib/libLivenessAnalysis.so",
-        "analysis": true
-    },
-
-    "avail-expr":{
-        "tests-dir": "/home/anshil/workspace/gandhi56_git/betterIR/tests/AvailableExpressions/",
-        "opt": "/usr/bin/opt-11",
-        "lib-path": "/home/anshil/workspace/gandhi56_git/betterIR/build/lib/libAvailableExpressions.so",
+        "lib-path": "/home/anshil/workspace/gandhi56_git/betterIR/cmake-build-debug/lib/libLivenessAnalysis.so",
         "analysis": true
     },
 
     "dead-code":{
        "tests-dir": "/home/anshil/workspace/gandhi56_git/betterIR/tests/DeadCodeElimination/",
        "opt": "/usr/bin/opt-11",
-       "lib-path": "/home/anshil/workspace/gandhi56_git/betterIR/build/lib/libDeadCodeElimination.so",
+       "lib-path": "/home/anshil/workspace/gandhi56_git/betterIR/cmake-build-debug/lib/libDeadCodeElimination.so",
        "analysis": false
     },
     "dead-store":{
        "tests-dir": "/home/anshil/workspace/gandhi56_git/betterIR/tests/DeadStoreElimination/",
         "opt": "/usr/bin/opt-11",
-       "lib-path": "/home/anshil/workspace/gandhi56_git/betterIR/build/lib/libDeadStoreElimination.so",
+       "lib-path": "/home/anshil/workspace/gandhi56_git/betterIR/cmake-build-debug/lib/libDeadStoreElimination.so",
        "analysis": false
     }
 }

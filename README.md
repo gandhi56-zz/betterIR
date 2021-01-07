@@ -6,7 +6,6 @@ implements:
 * Liveness analysis
 * Dead code elimination
 * Dead store elimination
-* Available Expressions (in progress)
 
 ## Compile
 To build this project, the following dependencies are required:
