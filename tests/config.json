@@ -17,5 +17,11 @@
         "opt": "/usr/bin/opt-11",
        "lib-path": "/home/anshil/workspace/gandhi56_git/betterIR/cmake-build-debug/lib/libDeadStoreElimination.so",
        "analysis": false
+    },
+    "GCSE":{
+      "tests-dir": "/home/anshil/workspace/gandhi56_git/betterIR/tests/GCSE",
+      "opt": "/usr/bin/opt-11",
+      "lib-path": "/home/anshil/workspace/gandhi56_git/betterIR/cmake-build-debug/lib/libGCSE.so",
+      "analysis": false
     }
 }
