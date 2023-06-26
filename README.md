@@ -31,4 +31,4 @@ Alternatively, the tester may also be used to optimize a collection of files:
     1. `tests-dir`: full path to the directory containing the test suite for the pass. The directory must contain the directories `input` and `output`, where the `input` directory contains `*.ll` files which will be optimized.
     2. `opt`: full path to the LLVM's optimizer executable.
     3. `lib-path`: path to the pass' shared object file
-2. Run `python3 tests/tester.py tests/config.json`
+2. Run `python3 tests/tester.py tests/config.json <name-of-pass>`
